@@ -20,7 +20,7 @@ Minimal example:
     <html>
     <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Hello World!</title>
+    <title>Minimal example</title>
     </head>
     <body>
     <script src="../../lib/cloudcast.js"></script>
@@ -28,17 +28,23 @@ Minimal example:
     <script type="text/javascript">
     var cloudcast = new Cloudcast({
             recorderWorkerPath : '../../lib/recorderWorker.js',
+            onInited : function() {
+                cloudcast.open();
+            },
             onOpened : function() {
                 cloudcast.startListening();
             },
-    onResults : function(hypos) {
+            onResults : function(hypos) {
                 var best_transcript = hypos[0].transcript;
                 console.log(best_transcript);
+            },
+            onError : function(err, data) {
+                console.log('Error: ' + err + ' ' + data);
+                cloudcast.cancel();
             }
     });
     window.onload = function() {
         cloudcast.init();
-        cloudcast.open();
     };
     </script>
     </body>
