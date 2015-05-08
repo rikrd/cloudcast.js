@@ -4,6 +4,7 @@ cloudcast.js
 __cloudcast.js__ is a small Javascript library for browser-based interaction with CloudCAST services.
 
 __cloudcast.js__ is based on the wonderful library [dictate.js](http://kaljurand.github.io/dictate.js/).
+
 __cloudcast.js__ is designed to interact with CloudCAST services.
 
 It uses [Recorderjs](https://github.com/mattdiamond/Recorderjs) for audio capture, and a WebSocket connection to the
