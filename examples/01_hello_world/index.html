@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>CloudCAST Tutorial 01 - Hello World!</title>
+</head>
+
+<body>
+<p>Server Status:</p>
+<div id="serverStatusBar"></div>
+
+<hr/>
+
+<div class="controls">
+<button
+	id="buttonStart"
+	onclick="startListening();"
+	title="Starts listening for speech, i.e. starts recording and transcribing.">Start</button>
+<button
+	id="buttonStop"
+	onclick="stopListening();"
+	title="Stops listening for speech. Speech captured so far will be recognized as if the user had stopped speaking at this point. Note that in the default case, this does not need to be called, as the speech endpointer will automatically stop the recognizer listening when it determines speech has completed.">Stop</button>
+<button
+	id="buttonCancel"
+	onclick="cancel();"
+	title="Cancels the speech recognition.">Cancel</button>
+</div>
+
+<hr/>
+
+<p>Recognition Status:</p>
+<div id="statusBar"></div>
+
+<hr/>
+
+<p>Partial transcription:</p>
+<div id="transcriptionPartial"></div>
+
+<hr/>
+
+<p>Final transcriptions:</p>
+<div id="transcription"></div>
+
+<hr/>
+
+<script src="../../lib/cloudcast.js"></script>
+<script src="../../lib/recorder.js"></script>
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script type="text/javascript">
+var cloudcast = new Cloudcast({
+		recorderWorkerPath : '../../lib/recorderWorker.js',
+		onServerStatus : function(json) {
+            __serverStatus(JSON.stringify(json));
+		},
+		onReadyForSpeech : function() {
+			__status("Ready for speech...");
+		},
+		onEndOfSpeech : function() {
+			__status("Transcribing...");
+		},
+		onEndOfSession : function() {
+			__status("");
+		},
+		onPartialResults : function(hypos) {
+			__updateTranscriptPartial(hypos[0].transcript);
+		},
+		onResults : function(hypos) {
+            __updateTranscriptPartial("");
+			__updateTranscript(hypos[0].transcript);
+		},
+		onOpened : function() {
+		    cloudcast.startListening();
+		},
+		onError : function(code, data) {
+			__error(code, data);
+			cloudcast.cancel();
+		}
+});
+
+// Private methods (called from the callbacks)
+function __error(code, data) {
+	statusBar.innerHTML = "ERR: " + code + ": " + (data || '') + "\n" + statusBar.innerHTML;
+}
+
+function __status(msg) {
+	statusBar.innerHTML = msg;
+}
+
+function __serverStatus(msg) {
+	serverStatusBar.innerHTML = msg;
+}
+
+function __updateTranscript(text) {
+    transcription.innerHTML = "" + text + "<br />" + transcription.innerHTML;
+}
+
+function __updateTranscriptPartial(text) {
+    transcriptionPartial.innerHTML = ">>>: " + text;
+}
+
+function startListening() {
+	cloudcast.open();
+}
+
+function stopListening() {
+	cloudcast.stopListening();
+}
+
+function cancel() {
+	cloudcast.cancel();
+}
+
+function init() {
+	cloudcast.init();
+}
+
+window.onload = function() {
+	init();
+};
+</script>
+</body>
+</html>

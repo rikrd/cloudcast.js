@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>CloudCAST Tutorial 02 - Hello World! (complete)</title>
+</head>
+
+<body>
+<span id="serverStatusBar" title="Number of available workers"></span>
+
+<div class="controls">
+<button
+	id="buttonStart"
+	onclick="startListening();"
+	title="Starts listening for speech, i.e. starts recording and transcribing.">Start</button>
+<button
+	id="buttonStop"
+	onclick="stopListening();"
+	title="Stops listening for speech. Speech captured so far will be recognized as if the user had stopped speaking at this point. Note that in the default case, this does not need to be called, as the speech endpointer will automatically stop the recognizer listening when it determines speech has completed.">Stop</button>
+<button
+	id="buttonCancel"
+	onclick="cancel();"
+	title="Cancels the speech recognition.">Cancel</button>
+
+    <br/>
+
+<button
+	onclick="init();"
+	title="Request access to the microphone">Init</button>
+
+<button
+	onclick="showConfig();"
+	title="Show the configuration of the Transcriber object">Config</button>
+
+<button
+	onclick="toggleLog();"
+	title="Show/hide log">Toggle log</button>
+
+<button
+	onclick="clearLog();"
+	title="Clear the log">Clear log</button>
+
+    <br/>
+
+<button
+	onclick="clearTranscription();"
+	title="Clear the transcription">Clear transcription</button>
+</div>
+
+<div id="statusBar"></div>
+
+<textarea rows="8" cols="80" id="transcription" class="changed">
+</textarea>
+
+<hr/>
+
+<pre id="log" style="display: none;">
+</pre>
+
+<script src="../../lib/cloudcast.js"></script>
+<script src="../../lib/recorder.js"></script>
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script type="text/javascript">
+var tt = new Transcription();
+var cloudcast = new Cloudcast({
+		recorderWorkerPath : '../../lib/recorderWorker.js',
+		onReadyForSpeech : function() {
+			__message("READY FOR SPEECH");
+			__status("Ready for speech...");
+		},
+		onEndOfSpeech : function() {
+			__message("END OF SPEECH");
+			__status("Transcribing...");
+		},
+		onEndOfSession : function() {
+			__message("END OF SESSION");
+			__status("");
+		},
+		onServerStatus : function(json) {
+			__serverStatus('Workers available: ' + json.num_workers_available + ' / Requests processed: ' + json.num_requests_processed);
+			if (json.num_workers_available == 0) {
+				$("#buttonStart").prop("disabled", true);
+				$("#serverStatusBar").addClass("highlight");
+			} else {
+				$("#buttonStart").prop("disabled", false);
+				$("#serverStatusBar").removeClass("highlight");
+			}
+		},
+		onPartialResults : function(hypos) {
+			tt.add(hypos[0].transcript, false);
+			__updateTranscript(tt.toString());
+		},
+		onResults : function(hypos) {
+			tt.add(hypos[0].transcript, true);
+			__updateTranscript(tt.toString());
+		},
+		onOpened : function() {
+            cloudcast.startListening();
+		},
+		onError : function(code, data) {
+			__error(code, data);
+			__status("Error: " + code);
+			cloudcast.cancel();
+		},
+		onEvent : function(code, data) {
+			__message(code, data);
+		}
+	});
+
+// Private methods (called from the callbacks)
+function __message(code, data) {
+	log.innerHTML = "msg: " + code + ": " + (data || '') + "\n" + log.innerHTML;
+}
+
+function __error(code, data) {
+	log.innerHTML = "ERR: " + code + ": " + (data || '') + "\n" + log.innerHTML;
+}
+
+function __status(msg) {
+	statusBar.innerHTML = msg;
+}
+
+function __serverStatus(msg) {
+	serverStatusBar.innerHTML = msg;
+}
+
+function __updateTranscript(text) {
+	$("#transcription").val(tt.toString());
+}
+
+// Public methods (called from the GUI)
+function toggleLog() {
+	$(log).toggle();
+}
+function clearLog() {
+	log.innerHTML = "";
+}
+
+function clearTranscription() {
+	tt = new Transcription();
+	$("#transcription").val("");
+}
+
+function startListening() {
+	cloudcast.open();
+}
+
+function stopListening() {
+	cloudcast.stopListening();
+}
+
+function cancel() {
+	cloudcast.cancel();
+}
+
+function init() {
+	cloudcast.init();
+}
+
+function showConfig() {
+	var pp = JSON.stringify(cloudcast.getConfig(), undefined, 2);
+	log.innerHTML = pp + "\n" + log.innerHTML;
+	$(log).show();
+}
+
+window.onload = function() {
+	init();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>CloudCAST Tutorial 03 - Results</title>
+<style type="text/css">
+    .phone {
+      display: inline-block;
+      border-top: #000 2px solid;
+      border-bottom: #000 2px solid;
+      background: #eee;
+      #width: attr(data-duration number 0.1)*1000;
+      margin-top: 3px;
+      margin-bottom: 3px;
+      height: 1em;
+    }
+    .phone:nth-child(even) {
+      background: #ccc;
+    }
+    .phone[data-boundary='B'] {
+      border-left: #000 2px solid;
+      margin-left: 1px;
+    }
+    .phone[data-boundary='S'] {
+      border-left: #000 2px solid;
+      border-right: #000 2px solid;
+      margin-left: 1px;
+      margin-right: 1px;
+    }
+    .phone[data-boundary='E'] {
+      border-right: #000 2px solid;
+      margin-right: 1px;
+    }
+    .phone .name {
+      text-align: center;
+      font-size: x-small;
+      font-family: sans-serif;
+    }
+    .phone .duration {
+      display: none;
+    }
+</style>
+</head>
+
+<body>
+<span id="serverStatusBar" title="Number of available workers"></span>
+
+<div class="controls">
+<button
+	id="buttonStart"
+	onclick="startListening();"
+	title="Starts listening for speech, i.e. starts recording and transcribing.">Start</button>
+<button
+	id="buttonStop"
+	onclick="stopListening();"
+	title="Stops listening for speech. Speech captured so far will be recognized as if the user had stopped speaking at this point. Note that in the default case, this does not need to be called, as the speech endpointer will automatically stop the recognizer listening when it determines speech has completed.">Stop</button>
+<button
+	id="buttonCancel"
+	onclick="cancel();"
+	title="Cancels the speech recognition.">Cancel</button>
+
+    <br/>
+
+<button
+	onclick="init();"
+	title="Request access to the microphone">Init</button>
+
+<button
+	onclick="showConfig();"
+	title="Show the configuration of the Transcriber object">Config</button>
+
+<button
+	onclick="toggleLog();"
+	title="Show/hide log">Toggle log</button>
+
+<button
+	onclick="clearLog();"
+	title="Clear the log">Clear log</button>
+
+    <br/>
+
+<button
+	onclick="clearTranscription();"
+	title="Clear the transcription">Clear transcription</button>
+</div>
+
+<div id="comparison">
+
+<div id="statusBar"></div>
+
+    <p>Transcription:</p>
+<textarea rows="8" cols="80" id="transcription" class="changed">
+</textarea>
+
+<hr/>
+
+<!-- BEGIN: Template. -->
+<script type="text/x-template" class="phoneTemplate">
+
+    <div class="phone">
+        <div class="name"></div>
+        <div class="duration"></div>
+    </div>
+
+</script>
+<!-- END: Template. -->
+
+<p>Partial alignment:</p>
+<div id="partialPhoneAlignment"></div>
+
+<p>Final alignment:</p>
+<div id="finalPhoneAlignment"></div>
+
+<hr/>
+
+
+<pre id="log" style="display: none;">
+</pre>
+
+<script src="../../lib/cloudcast.js"></script>
+<script src="../../lib/recorder.js"></script>
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script type="text/javascript">
+var tt = new Transcription();
+var cloudcast = new Cloudcast({
+		recorderWorkerPath : '../../lib/recorderWorker.js',
+		onReadyForSpeech : function() {
+			__message("READY FOR SPEECH");
+			__status("Ready for speech...");
+		},
+		onEndOfSpeech : function() {
+			__message("END OF SPEECH");
+			__status("Transcribing...");
+		},
+		onEndOfSession : function() {
+			__message("END OF SESSION");
+			__status("");
+		},
+		onServerStatus : function(json) {
+			__serverStatus('Workers available: ' + json.num_workers_available + ' / Requests processed: ' + json.num_requests_processed);
+			if (json.num_workers_available == 0) {
+				$("#buttonStart").prop("disabled", true);
+				$("#serverStatusBar").addClass("highlight");
+			} else {
+				$("#buttonStart").prop("disabled", false);
+				$("#serverStatusBar").removeClass("highlight");
+			}
+		},
+		onPartialResults : function(hypos) {
+            tt.add(hypos[0].transcript, false);
+			__updateTranscript(hypos[0].transcript);
+		},
+		onResults : function(hypos) {
+            tt.add(hypos[0].transcript, true);
+			__updateTranscript(hypos[0].transcript);
+		},
+		onPartialAlignments : function(hypos) {
+			__updatePhoneAlignmentPartial(hypos[0].transcript);
+		},
+		onAlignments : function(hypos) {
+			__updatePhoneAlignment(hypos[0].transcript);
+		},
+        onOpened : function() {
+		    __status("Recogniser opened.");
+		    cloudcast.startListening();
+        },
+		onError : function(code, data) {
+			__error(code, data);
+			__status("Error: " + code);
+			cloudcast.cancel();
+		},
+		onEvent : function(code, data) {
+			__message(code, data);
+		}
+	});
+
+// Private methods (called from the callbacks)
+function __message(code, data) {
+	log.innerHTML = "msg: " + code + ": " + (data || '') + "\n" + log.innerHTML;
+}
+
+function __error(code, data) {
+	log.innerHTML = "ERR: " + code + ": " + (data || '') + "\n" + log.innerHTML;
+}
+
+function __status(msg) {
+	statusBar.innerHTML = msg;
+}
+
+function __serverStatus(msg) {
+	serverStatusBar.innerHTML = msg;
+}
+
+function __updateTranscript(text) {
+	$("#transcription").val(tt.toString());
+}
+
+function __phonesToHTML(phones) {
+    var phoneTemplate = $( $( "script.phoneTemplate" ).html() );
+
+    var buffer = $.map(
+            phones,
+            function( phoneData, index ){
+                // Create a new instance of the friend template.
+                var phone = phoneTemplate.clone();
+
+                // Populate the values.
+                phone
+                    .attr( "data-phoneme", phoneData.phoneme )
+                    .attr( "data-boundary", phoneData.boundary )
+                    .attr( "data-duration", parseFloat(phoneData.duration) )
+                    .width( phoneData.duration * 200 )
+                    .find( "div.name" )
+                        .text( phoneData.phoneme )
+                        .end()
+                    .find( "div.duration" )
+                        .text( phoneData.duration )
+                        .end()
+                ;
+
+                // Now, return the raw DOM node. Since we are using
+                // $.map(), this will result in an array of raw DOM
+                // nodes.
+                return( phone.get() );
+            }
+    );
+
+    return buffer;
+}
+
+function __updatePhoneAlignmentPartial(alignment) {
+    var elements = __phonesToHTML(alignment);
+
+    $("#partialPhoneAlignment").html( elements );
+}
+
+function __updatePhoneAlignment(alignment) {
+    var phones = __parsePhoneAlignment(alignment);
+    var elements = __phonesToHTML(phones);
+
+    $("#partialPhoneAlignment").html( "" );
+    $("#finalPhoneAlignment").append( elements );
+}
+
+// Public methods (called from the GUI)
+function toggleLog() {
+	$(log).toggle();
+}
+function clearLog() {
+	log.innerHTML = "";
+}
+
+function clearTranscription() {
+	tt = new Transcription();
+
+	$("#transcription").val("");
+    $("#partialPhoneAlignment").html("");
+	$("#finalPhoneAlignment").html("");}
+
+function startListening() {
+	cloudcast.open();
+}
+
+function stopListening() {
+	cloudcast.stopListening();
+}
+
+function cancel() {
+	cloudcast.cancel();
+}
+
+function init() {
+	cloudcast.init();
+}
+
+function showConfig() {
+	var pp = JSON.stringify(cloudcast.getConfig(), undefined, 2);
+	log.innerHTML = pp + "\n" + log.innerHTML;
+	$(log).show();
+}
+
+window.onload = function() {
+	init();
+};
+</script>
+</body>
+</html>

@@ -16,6 +16,19 @@ API
 The API is modelled after [Android's SpeechRecognizer](http://developer.android.com/reference/android/speech/SpeechRecognizer.html).
 See the source code of [lib/cloudcast.js](lib/cloudcast.js).
 
+Getting Started
+---------------
+
+
+
+Examples
+--------
+
+To run the examples on localhost, start a local webservice, e.g.:
+
+	python -m SimpleHTTPServer
+
+and then open e.g. <http://localhost:8000/examples>.
 
 Browser support
 ---------------
