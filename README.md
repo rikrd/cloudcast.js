@@ -10,15 +10,39 @@ __cloudcast.js__ is designed to interact with CloudCAST services.
 It uses [Recorderjs](https://github.com/mattdiamond/Recorderjs) for audio capture, and a WebSocket connection to the
 [CloudCAST server](...) for online speech recognition.
 
-API
----
-
-The API is modelled after [Android's SpeechRecognizer](http://developer.android.com/reference/android/speech/SpeechRecognizer.html).
-See the source code of [lib/cloudcast.js](lib/cloudcast.js).
 
 Getting Started
 ---------------
 
+Minimal example:
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>Hello World!</title>
+    </head>
+    <body>
+    <script src="../../lib/cloudcast.js"></script>
+    <script src="../../lib/recorder.js"></script>
+    <script type="text/javascript">
+    var cloudcast = new Cloudcast({
+            recorderWorkerPath : '../../lib/recorderWorker.js',
+            onOpened : function() {
+                cloudcast.startListening();
+            },
+    onResults : function(hypos) {
+                var best_transcript = hypos[0].transcript;
+                console.log(best_transcript);
+            }
+    });
+    window.onload = function() {
+        cloudcast.init();
+        cloudcast.open();
+    };
+    </script>
+    </body>
+    </html>
 
 
 Examples
