@@ -89,7 +89,7 @@
 	onclick="clearTranscription();"
 	title="Clear the transcription">Clear transcription</button>
 </div>
-
+<br/>
 <div id="statusBar"></div>
 
 
@@ -114,6 +114,12 @@
 	disabled="true"
     onclick="setOpenVocabulary();"
 	title="Set the task to an open vocabulary.">Set Open Vocabulary</button>
+<br/>
+<button
+    id="sendAdaptationState"
+    disabled="true"
+	onclick="sendAdaptationState();"
+	title="Send adaptation state">Send adaptation state</button>
 
 <p>Transcription:</p>
 <textarea rows="8" cols="80" id="transcription" class="changed">
@@ -156,18 +162,24 @@ var cloudcast = new Cloudcast({
 			$("#buttonStart").prop("disabled", true);
 			$("#buttonStop").prop("disabled", false);
             $("#buttonCancel").prop("disabled", false);
+
+            $("#setForcedAlignment").prop("disabled", true);
+		    $("#setForcedChoice").prop("disabled", true);
+            $("#setOpenVocabulary").prop("disabled", true);
 		},
 		onEndOfSpeech : function() {
 			__message("END OF SPEECH");
 			__status("Transcribing...");
 			$("#buttonStart").prop("disabled", false);
             $("#buttonStop").prop("disabled", true);
+            $("#buttonCancel").prop("disabled", true);
 		},
 		onEndOfSession : function() {
 			__message("END OF SESSION");
 			__status("");
 			$("#buttonStart").prop("disabled", false);
             $("#buttonStop").prop("disabled", true);
+            $("#buttonCancel").prop("disabled", false);
 		},
 		onServerStatus : function(json) {
 			__serverStatus('Workers available: ' + json.num_workers_available + ' / Requests processed: ' + json.num_requests_processed);
@@ -206,21 +218,34 @@ var cloudcast = new Cloudcast({
 		    $("#buttonStart").prop("disabled", false);
 		    $("#buttonOpen").prop("disabled", true);
 		    $("#buttonClose").prop("disabled", false);
+            $("#buttonCancel").prop("disabled", false);
 
 		    $("#setForcedAlignment").prop("disabled", false);
 		    $("#setForcedChoice").prop("disabled", false);
 		    $("#setOpenVocabulary").prop("disabled", false);
+
+		    enableAdaptationStateButton();
         },
         onClosed : function() {
             __status("Recogniser closed.");
 		    $("#buttonStart").prop("disabled", true);
 		    $("#buttonOpen").prop("disabled", false);
+		    $("#buttonClose").prop("disabled", true);
+		    $("#buttonCancel").prop("disabled", true);
 
 		    $("#setForcedAlignment").prop("disabled", true);
 		    $("#setForcedChoice").prop("disabled", true);
             $("#setOpenVocabulary").prop("disabled", true);
+            $("#sendAdaptationState").prop("disabled", true);
+
+		},
+		onAdaptationState : function(adaptation_state) {
+            if(typeof(Storage) !== "undefined") {
+                // Code for localStorage/sessionStorage.
+                localStorage.setItem("adaptationState", JSON.stringify(adaptation_state));
+            }
 		}
-	});
+});
 
 // Private methods (called from the callbacks)
 function __message(code, data) {
@@ -327,6 +352,25 @@ function cancel() {
 
 function init() {
 	cloudcast.init();
+}
+
+function enableAdaptationStateButton() {
+    if(typeof(Storage) !== "undefined") {
+        if (localStorage.adaptationState) {
+            $("#sendAdaptationState").prop("disabled", false);
+            return;
+        }
+    }
+
+    $("#sendAdaptationState").prop("disabled", true);
+}
+
+function sendAdaptationState() {
+    if(typeof(Storage) !== "undefined") {
+        if (localStorage.adaptationState) {
+            cloudcast.setAdaptationState(JSON.parse(localStorage.adaptationState));
+        }
+    }
 }
 
 function setForcedAlignment() {
