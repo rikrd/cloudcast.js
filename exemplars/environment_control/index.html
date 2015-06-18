@@ -5,25 +5,38 @@
 <title>OpenHAB frontend</title>
 </head>
 <body>
+
+<div id="content">
+</div>
+
+<div id="status">
+</div>
+
 <div id="current_choices">
 </div>
+
 <button id="choose"
         disabled="true"
         onclick="choose();">Choose</button>
 
 <div>
-<pre id="log">
-</pre>
+    <pre id="log">
+    </pre>
 </div>
 
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
-<script src="../../lib/cloudcast.js"></script>
-<script src="../../lib/recorder.js"></script>
+<script src="../../../lib/cloudcast.js"></script>
+<script src="../../../lib/recorder.js"></script>
 <script type="text/javascript">
 var currentState = null;
 var sitemap = null;
 var currentChoices = [];
 var availableWorkers = 0;
+
+var content = $('#content');
+var input = $('#input');
+var status = $('#status');
+
 
 var cloudcast = new Cloudcast({
         recorderWorkerPath : '../../lib/recorderWorker.js',
@@ -71,7 +84,7 @@ function action() {
     var request = $.ajax
     ({
         type       : "POST",
-        url        : "http://10.9.8.170:8080/rest/items/Light_FF_Office_Ceiling",
+        url        : "http://localhost:8080/rest/items/Light_FF_Office_Ceiling",
         data       : "ON",
         headers    : { "Content-Type": "text/plain" },
         xhrFields: {
@@ -99,12 +112,11 @@ function getSitemap()
     var request = $.ajax
     ({
         type       : "GET",
-        url        : "http://10.9.8.170:8080/rest/sitemaps/default",
-        data       : { "type": "json" },
+        url        : "http://localhost:8080/rest/sitemaps/demo",
         xhrFields: {
-            withCredentials: true
+            withCredentials: true,
         },
-        crossDomain: true
+        crossDomain: true,
     });
 
     request.done( function(data)
@@ -149,7 +161,7 @@ function init_openhab() {
 }
 
 window.onload = function() {
-    cloudcast.init();
+    // cloudcast.init();
     init_openhab();
 };
 </script>
