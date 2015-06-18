@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<title>OpenHAB frontend</title>
+</head>
+<body>
+<div id="current_choices">
+</div>
+<button id="choose"
+        disabled="true"
+        onclick="choose();">Choose</button>
+
+<div>
+<pre id="log">
+</pre>
+</div>
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="../../lib/cloudcast.js"></script>
+<script src="../../lib/recorder.js"></script>
+<script type="text/javascript">
+var currentState = null;
+var sitemap = null;
+var currentChoices = [];
+var availableWorkers = 0;
+
+var cloudcast = new Cloudcast({
+        recorderWorkerPath : '../../lib/recorderWorker.js',
+        onInited : function() {
+            cloudcast.open();
+        },
+        onReadyForSpeech : function() {
+			__message("READY FOR SPEECH");
+            $("#choose").prop("disabled", true);
+		},
+        onServerStatus : function(json) {
+            availableWorkers = json.num_workers_available;
+			if (availableWorkers != 0 && cloudcast.state < cloudcast.OPENED) {
+                cloudcast.open();
+			}
+		},
+        onOpened : function() {
+            $('#choose').prop('disabled', false);
+        },
+        onClosed : function() {
+            $('#choose').prop('disabled', true);
+            if (availableWorkers != 0) {
+                cloudcast.open();
+			}
+        },
+        onResults : function(hypos) {
+            var best_transcript = hypos[0].transcript;
+            console.log(best_transcript);
+            action();
+        },
+        onError : function(err, data) {
+            console.log('Error: ' + err + ' ' + data);
+            cloudcast.cancel();
+        },
+        onEvent : function(code, data) {
+			__message(code, data);
+		}
+});
+
+function __message(code, data) {
+	$("#log")[0].innerHTML = "msg: " + code + ": " + (data || '') + "\n" + $("#log")[0].innerHTML;
+}
+
+function action() {
+    var request = $.ajax
+    ({
+        type       : "POST",
+        url        : "http://10.9.8.170:8080/rest/items/Light_FF_Office_Ceiling",
+        data       : "ON",
+        headers    : { "Content-Type": "text/plain" },
+        xhrFields: {
+            withCredentials: true
+        },
+        crossDomain: true
+    });
+
+    request.done( function(data)
+    {
+        console.dir(data);
+        sitemap = data;
+        updateCurrentChoices();
+    });
+
+    request.fail( function(jqXHR, textStatus )
+    {
+        console.log( "Failure: " + textStatus );
+    });
+
+}
+
+function getSitemap()
+{
+    var request = $.ajax
+    ({
+        type       : "GET",
+        url        : "http://10.9.8.170:8080/rest/sitemaps/default",
+        data       : { "type": "json" },
+        xhrFields: {
+            withCredentials: true
+        },
+        crossDomain: true
+    });
+
+    request.done( function(data)
+    {
+        console.dir(data);
+        sitemap = data;
+        updateCurrentChoices();
+    });
+
+    request.fail( function(jqXHR, textStatus )
+    {
+        console.log( "Failure: " + textStatus );
+    });
+}
+
+function updateCurrentChoices() {
+    if (sitemap) {
+        $("#current_choices").empty();
+        currentChoices = [];
+        $.each(sitemap.homepage.widget[0].widget, function(k, v) {
+            $("#current_choices").append(v.label + '</br>');
+            currentChoices.push(v.label);
+        });
+    }
+}
+
+function choose() {
+        cloudcast.setTask({"task": {
+                            "type": "forced-choice",
+                            "params": {
+                                "choices": currentChoices,
+                                }
+                            }
+                        });
+
+        cloudcast.startListening();
+        window.setTimeout(cloudcast.stopListening, 2000);
+}
+
+function init_openhab() {
+    getSitemap();
+}
+
+window.onload = function() {
+    cloudcast.init();
+    init_openhab();
+};
+</script>
+</body>
+</html>
