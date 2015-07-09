@@ -26,9 +26,7 @@
     </div>
 
     <ol id="path" class="breadcrumb">
-        <li><a href="#">Home</a></li>
-        <li><a href="#">Library</a></li>
-        <li class="active">Data</li>
+        <li class="active">Home</li>
     </ol>
 
     <div id="content">
@@ -39,11 +37,15 @@
         </div>
     </div>
 
-    <div id="please-wait-dialog" class="modal fade" role="dialog">
+    <pre id="log">
+    </pre>
+
+
+    <div id="accessing-sitemap-wait-dialog" class="modal fade" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title" id="gridSystemModalLabel">Accessing the sitemap of the OpenHab server...</h4>
+                    <h4 class="modal-title">Accessing the sitemap of the OpenHab server...</h4>
                 </div>
                 <div class="modal-body">
                     <div class="container-fluid">
@@ -56,7 +58,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -108,7 +109,7 @@ var cloudcast = new Cloudcast({
             cloudcast.cancel();
         },
         onEvent : function(code, data) {
-			__message(code, data);
+			__message(code, "CloudCast: " + data);
 		}
 });
 
@@ -187,24 +188,58 @@ function choose() {
 }
 
 function init_openhab() {
-    $('#please-wait-dialog').modal('show');
+    $('#accessing-sitemap-wait-dialog').modal('show');
 
     openhab = new Openhab({
         onInited: inited_openhab,
+        onNavigated: update_openhab,
+        onEvent: function (code, data) {
+            __message(code, "OpenHab: " + data);
+        }
     });
 
     openhab.init();
 }
 
-function inited_openhab() {
-    var current_actions = openhab.getCurrentActions();
-    console.dir(current_actions);
-    update_current_actions(current_actions);
+function update_openhab() {
+    update_current_actions();
+    update_path();
 }
 
-function update_current_actions(current_actions) {
+function inited_openhab() {
+    update_openhab();
 
+    $('#accessing-sitemap-wait-dialog').modal('hide');
+}
+
+function update_path() {
+    $('#path').empty();
+
+    var path = openhab.getPath();
+    console.dir(path);
+
+    path.splice(0, 0, ["Home"]);
+
+    for (var i=0; i<path.length; i++) {
+        var items = path[i];
+        var markup;
+        if (i<path.length-1) {
+            markup = '<li><a href="#">' + items.join() + '</a></li>';
+        } else {
+            markup = '<li class="active">' + items.join() + '</li>';
+        }
+        $('#path').append(markup);
+    }
+
+    // TODO: handle the click events of the breadcrumb
+
+}
+
+function update_current_actions() {
     $('#current-actions').empty();
+
+    var current_actions = openhab.getCurrentActions();
+    console.dir(current_actions);
 
     for (var i=0; i<current_actions.length; i++) {
         var action = current_actions[i];
@@ -212,7 +247,7 @@ function update_current_actions(current_actions) {
         $('#current-actions').append(markup);
     }
 
-    $('#please-wait-dialog').modal('hide');
+    // TODO: handle the click events of the buttons
 }
 
 window.onload = function() {

@@ -27,6 +27,7 @@
 		config.onInited = config.onInited || function() {};
 		config.onEvent = config.onEvent || function(e, data) {};
 		config.onError = config.onError || function(e, data) {};
+		config.onNavigated = config.onNavigated || function() {};
         config.sitemap = null;
 
         // States
@@ -142,6 +143,7 @@
             switch(action.type) {
                 case "navigation":
                     this.path = this.path.concat(action.parameters.path);
+                    config.onNavigated();
                     break;
 
                 default:
