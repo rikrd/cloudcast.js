@@ -37,7 +37,7 @@
 
         // This is a list of list of keys
         // The second list is in order to allow jumping several levels at once (for frames or groups)
-        this.navigation_state = [];
+        this.path = [];
 
 		// Returns the configuration
 		this.getConfig = function() {
@@ -73,12 +73,12 @@
 		}
 
         // Get current choices
-        this.getChoices = function() {
+        this.getCurrentActions = function() {
             var current_map = this.getCurrentMap();
 
             var choices = map_to_choices(current_map, []);
 
-            console.dir(choices);
+            return choices;
         }
 
         function map_to_choices(map, path_prefix) {
@@ -95,9 +95,12 @@
             switch(widget.type) {
                 case "Group":
                     result = [{
-                                command: widget.label,
-                                path: path_prefix.concat(["linkedPage"])
-                             }];
+                                type: "navigation",
+                                speech_command: widget.label,
+                                parameters: {
+                                    path: path_prefix.concat(["linkedPage"])
+                                }
+                            }];
                     break;
 
                 case "Frame":
@@ -107,9 +110,12 @@
                 case "Text":
                     if (widget.linkedPage) {
                         result = [{
-                                command: widget.label,
-                                path: path_prefix.concat(["linkedPage"])
-                             }];
+                                type: "navigation",
+                                speech_command: widget.label,
+                                parameters: {
+                                    path: path_prefix.concat(["linkedPage"])
+                                }
+                            }];
                     } else {
                         console.log("Ignoring Text widget " + widget.label + ".");
                     }
@@ -124,14 +130,33 @@
             return result;
         }
 
+        this.getPath = function() {
+            return this.path;
+        }
+
+        this.setPath = function(path) {
+            this.path = path;
+        }
+
+        this.performAction = function(action) {
+            switch(action.type) {
+                case "navigation":
+                    this.path = this.path.concat(action.parameters.path);
+                    break;
+
+                default:
+                    console.error("Action " + action.type + "not yet implmented.");
+                    break;
+            }
+        }
 
         // Navigate to the current node of the sitemap and return the content
         this.getCurrentMap = function() {
             var map = config.sitemap.homepage;
 
             // Go to the current node
-            for (var i=0; i<this.navigation_state.length; i++) {
-                var keys = this.navigation_state[i];
+            for (var i=0; i<this.path.length; i++) {
+                var keys = this.path[i];
                 for (var j=0; j<keys.length; j++)
                     var key = keys[j];
                     map = map[key];
