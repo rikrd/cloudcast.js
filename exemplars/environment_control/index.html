@@ -243,8 +243,12 @@ function update_current_actions() {
 
     for (var i=0; i<current_actions.length; i++) {
         var action = current_actions[i];
-        var markup = '<button type="button" class="btn btn-default">'+ action.speech_command +'</button>';
-        $('#current-actions').append(markup);
+        var $markup = $('<button type="button" class="btn btn-default">'+ action.speech_command +'</button>');
+        $markup.data('action', action);
+        $markup.click(function(event) {
+            console.dir($(this).data('action'));
+        });
+        $('#current-actions').append($markup);
     }
 
     // TODO: handle the click events of the buttons

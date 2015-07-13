@@ -1,5 +1,5 @@
 (function(window){
-	var SERVER = "http://crossorigin.me/http://demo.openhab.org:9080/";
+	var SERVER = "https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/";
 
 	// Error codes (mostly following Android error names and codes)
 	var ERR_NETWORK = 2;
@@ -59,7 +59,7 @@
                 });
 
             request.done( function(data) {
-                config.sitemap = JSON.parse(data);
+                config.sitemap = data;
                 config.onEvent(MSG_DOWNLOADED_SITEMAP, "Downloaded sitemap ...");
 
                 config.onInited();
