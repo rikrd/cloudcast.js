@@ -247,6 +247,7 @@ function update_current_actions() {
         $markup.data('action', action);
         $markup.click(function(event) {
             console.dir($(this).data('action'));
+            openhab.performAction($(this).data('action'));
         });
         $('#current-actions').append($markup);
     }
