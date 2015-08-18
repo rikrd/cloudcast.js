@@ -1,3 +1,5 @@
+"use strict";
+
 (function(window){
 	var SERVER = "https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/";
 
@@ -30,15 +32,17 @@
 		config.onNavigated = config.onNavigated || function() {};
         config.sitemap = null;
 
+        // This is a list of path elements
+        // Each path element contains:
+        //  - Name: string to display in the breadcrumb widget
+        //  - Keys: list is in order to allow jumping several levels at once (for frames or groups)
+        config.currentState = [];
+
         // States
         this.NOT_INITED = 1;
         this.INITED = 2;
 
         this.state = this.NOT_INITED;
-
-        // This is a list of list of keys
-        // The second list is in order to allow jumping several levels at once (for frames or groups)
-        this.path = [];
 
 		// Returns the configuration
 		this.getConfig = function() {
@@ -85,7 +89,7 @@
         function map_to_choices(map, path_prefix) {
             var result = [];
             for (var i=0; i<map.widgets.length; i++) {
-                result = result.concat(widget_to_choices(map.widgets[i], path_prefix.concat([i])));
+                result = result.concat(widget_to_choices(map.widgets[i], path_prefix.concat(["widgets", i])));
             }
 
             return result;
@@ -99,7 +103,10 @@
                                 type: "navigation",
                                 speech_command: widget.label,
                                 parameters: {
-                                    path: path_prefix.concat(["linkedPage"])
+                                    path: {
+                                        name: widget.label,
+                                        keys: path_prefix.concat(["linkedPage"])
+                                    }
                                 }
                             }];
                     break;
@@ -114,7 +121,10 @@
                                 type: "navigation",
                                 speech_command: widget.label,
                                 parameters: {
-                                    path: path_prefix.concat(["linkedPage"])
+                                    path: {
+                                        name: widget.label,
+                                        keys: path_prefix.concat(["linkedPage"])
+                                    }
                                 }
                             }];
                     } else {
@@ -131,18 +141,18 @@
             return result;
         }
 
-        this.getPath = function() {
-            return this.path;
+        this.getState = function() {
+            return config.currentState;
         }
 
-        this.setPath = function(path) {
-            this.path = path;
+        this.setState = function(state) {
+            config.currentState = state;
         }
 
         this.performAction = function(action) {
             switch(action.type) {
                 case "navigation":
-                    this.path = this.path.concat(action.parameters.path);
+                    config.currentState.push(action.parameters.path);
                     config.onNavigated();
                     break;
 
@@ -157,11 +167,10 @@
             var map = config.sitemap.homepage;
 
             // Go to the current node
-            for (var i=0; i<this.path.length; i++) {
-                var keys = this.path[i];
+            for (var i=0; i<config.currentState.length; i++) {
+                var keys = config.currentState[i].keys;
                 for (var j=0; j<keys.length; j++)
-                    var key = keys[j];
-                    map = map[key];
+                    map = map[keys[j]];
             }
 
             return map;

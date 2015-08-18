@@ -214,19 +214,18 @@ function inited_openhab() {
 
 function update_path() {
     $('#path').empty();
+    $('#path').append('<li><a href="#">Home</a></li>');
 
-    var path = openhab.getPath();
-    console.dir(path);
+    var state = openhab.getState();
+    console.dir(state);
 
-    path.splice(0, 0, ["Home"]);
-
-    for (var i=0; i<path.length; i++) {
-        var items = path[i];
+    for (var i=0; i<state.length; i++) {
+        var name = state[i].name;
         var markup;
-        if (i<path.length-1) {
-            markup = '<li><a href="#">' + items.join() + '</a></li>';
+        if (i<state.length-1) {
+            markup = '<li><a href="#">' + name + '</a></li>';
         } else {
-            markup = '<li class="active">' + items.join() + '</li>';
+            markup = '<li class="active">' + name + '</li>';
         }
         $('#path').append(markup);
     }
