@@ -1,7 +1,7 @@
 "use strict";
 
 (function(window){
-	var SERVER = "https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/";
+	var SERVER = "https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/rest/sitemaps/demo";
 
 	// Error codes (mostly following Android error names and codes)
 	var ERR_NETWORK = 2;
@@ -58,8 +58,9 @@
 			config.onEvent(MSG_DOWNLOADING_SITEMAP, "Downloading sitemap ...");
             var request = $.ajax({
                     type       : "GET",
-                    url        : config.server + "rest/sitemaps/demo",
-                    crossDomain: true,
+                    url        : config.server,
+                    // TODO: from the server string if crossDomain is necessary
+                    //crossDomain: true,
                 });
 
             request.done( function(data) {
@@ -134,7 +135,7 @@
 
 
                 default:
-                    console.error("Case " + widget.type + " not handled.");
+                    console.warn("Case " + widget.type + " not handled.");
                     break;
             }
 
@@ -147,6 +148,7 @@
 
         this.setState = function(state) {
             config.currentState = state;
+            config.onNavigated();
         }
 
         this.performAction = function(action) {

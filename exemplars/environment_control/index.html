@@ -71,9 +71,10 @@ var content = $('#content');
 var input = $('#input');
 var status = $('#status');
 
-var url = 'http://crossorigin.me/http://demo.openhab.org:9080/';
-
-var openhab = new Openhab();
+var url;
+ url = 'https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/rest/sitemaps/demo';
+ url = 'demo.json';
+var openhab;
 
 var cloudcast = new Cloudcast({
         recorderWorkerPath : '../../lib/recorderWorker.js',
@@ -141,39 +142,6 @@ function action() {
 
 }
 
-function getSitemap()
-{
-    var request = $.ajax
-    ({
-        type       : "GET",
-        url        : url + "rest/sitemaps/demo",
-        crossDomain: true,
-    });
-
-    request.done( function(data)
-    {
-        console.dir(data);
-        sitemap = data;
-        updateCurrentChoices();
-    });
-
-    request.fail( function(jqXHR, textStatus )
-    {
-        console.log( "Failure: " + textStatus );
-    });
-}
-
-function updateCurrentChoices() {
-    if (sitemap) {
-        $("#current_choices").empty();
-        currentChoices = [];
-        $.each(sitemap.homepage.widget[0].widget, function(k, v) {
-            $("#current_choices").append(v.label + '</br>');
-            currentChoices.push(v.label);
-        });
-    }
-}
-
 function choose() {
         cloudcast.setTask({"task": {
                             "type": "forced-choice",
@@ -191,6 +159,7 @@ function init_openhab() {
     $('#accessing-sitemap-wait-dialog').modal('show');
 
     openhab = new Openhab({
+        server: url,
         onInited: inited_openhab,
         onNavigated: update_openhab,
         onEvent: function (code, data) {
@@ -214,20 +183,28 @@ function inited_openhab() {
 
 function update_path() {
     $('#path').empty();
-    $('#path').append('<li><a href="#">Home</a></li>');
 
-    var state = openhab.getState();
-    console.dir(state);
+    var state = openhab.getState().slice();
+
+    state.splice(0, 0, {name: "Home"});
 
     for (var i=0; i<state.length; i++) {
         var name = state[i].name;
-        var markup;
+        var $markup;
         if (i<state.length-1) {
-            markup = '<li><a href="#">' + name + '</a></li>';
+            $markup = $('<li><a href="#">' + name + '</a></li>');
+            $markup.data('index', i);
+            $markup.click(function(event) {
+                var index = $(this).data('index');
+
+                var currentState = openhab.getState().slice();
+                currentState.splice(index, Number.MAX_VALUE);
+                openhab.setState(currentState);
+            });
         } else {
-            markup = '<li class="active">' + name + '</li>';
+            $markup = $('<li class="active">' + name + '</li>');
         }
-        $('#path').append(markup);
+        $('#path').append($markup);
     }
 
     // TODO: handle the click events of the breadcrumb
