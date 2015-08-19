@@ -96,14 +96,19 @@
             return result;
         }
 
+        function label_to_command(label) {
+            return label;
+        }
+
         function widget_to_choices(widget, path_prefix) {
             var result = [];
             switch(widget.type) {
                 case "Group":
                     result = [{
                                 type: "navigation",
-                                speech_command: widget.label,
                                 parameters: {
+                                    label: widget.label,
+                                    speech_command: widget.label,
                                     path: {
                                         name: widget.label,
                                         keys: path_prefix.concat(["linkedPage"])
@@ -119,20 +124,35 @@
                 case "Text":
                     if (widget.linkedPage) {
                         result = [{
-                                type: "navigation",
-                                speech_command: widget.label,
-                                parameters: {
-                                    path: {
-                                        name: widget.label,
-                                        keys: path_prefix.concat(["linkedPage"])
+                                    type: "navigation",
+                                    parameters: {
+                                        label: widget.label,
+                                        speech_command: widget.label,
+                                        path: {
+                                            name: widget.label,
+                                            keys: path_prefix.concat(["linkedPage"])
+                                        }
                                     }
-                                }
-                            }];
+                                }];
                     } else {
-                        console.log("Ignoring Text widget " + widget.label + ".");
+                        result = [{
+                                    type: "label",
+                                    parameters: {
+                                        label: widget.label,
+                                    }
+                                }];
                     }
                     break;
 
+                case "Switch":
+                    result = [{
+                                type: "switch",
+                                parameters: {
+                                    label: widget.label,
+                                    widget: widget,
+                                }
+                            }];
+                    break;
 
                 default:
                     console.warn("Case " + widget.type + " not handled.");

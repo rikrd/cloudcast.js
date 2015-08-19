@@ -11,12 +11,15 @@
     <!-- Optional theme -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
 
+    <link rel="stylesheet" href="main.css">
+
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
     <script src="../../../lib/cloudcast.js"></script>
     <script src="../../../lib/recorder.js"></script>
     <script src="openhab.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 
@@ -32,14 +35,24 @@
     <div id="content">
     </div>
 
-    <div id="current-actions-wrap" class="text-center">
-        <div id="current-actions" class="btn-group-vertical">
+    <div class="row">
+        <div class="col-md-6" role="main">
+            <div id="current-actions" class="btn-group-vertical btn-block">
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <ul id="current-labels" class="list-group">
+            </ul>
         </div>
     </div>
 
-    <pre id="log">
-    </pre>
+    <br/>
 
+    <div>
+        <pre id="log">
+        </pre>
+    </div>
 
     <div id="accessing-sitemap-wait-dialog" class="modal fade" role="dialog">
         <div class="modal-dialog" role="document">
@@ -48,11 +61,9 @@
                     <h4 class="modal-title">Accessing the sitemap of the OpenHab server...</h4>
                 </div>
                 <div class="modal-body">
-                    <div class="container-fluid">
-                        <div class="progress">
-                            <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
-                                <span class="sr-only">100% Complete</span>
-                            </div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                            <span class="sr-only">100% Complete</span>
                         </div>
                     </div>
                 </div>
@@ -213,19 +224,39 @@ function update_path() {
 
 function update_current_actions() {
     $('#current-actions').empty();
+    $('#current-labels').empty();
 
     var current_actions = openhab.getCurrentActions();
     console.dir(current_actions);
 
     for (var i=0; i<current_actions.length; i++) {
         var action = current_actions[i];
-        var $markup = $('<button type="button" class="btn btn-default">'+ action.speech_command +'</button>');
-        $markup.data('action', action);
-        $markup.click(function(event) {
-            console.dir($(this).data('action'));
-            openhab.performAction($(this).data('action'));
-        });
-        $('#current-actions').append($markup);
+        var action_text = action.parameters.label;
+        if (action.parameters.speech_command && action.parameters.speech_command != action.parameters.label) {
+            action_text += '<br/>' + action.parameters.speech_command;
+        }
+
+        switch (action.type) {
+            case "navigation":
+                var $markup = $('<button type="button" class="btn btn-default">'+ action_text +'</button>');
+                $markup.data('action', action);
+                $markup.click(function(event) {
+                    console.dir($(this).data('action'));
+                    openhab.performAction($(this).data('action'));
+                });
+                $('#current-actions').append($markup);
+                break;
+
+            case "label":
+                var $markup = $('<li class="list-group-item">'+ action_text +'</li>');
+                $('#current-labels').append($markup);
+
+            case "switch":
+                console.dir(action);
+
+            default:
+                break;
+        }
     }
 
     // TODO: handle the click events of the buttons
