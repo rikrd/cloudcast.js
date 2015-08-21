@@ -16,6 +16,9 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.0/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.0/js/bootstrap-toggle.min.js"></script>
+
     <script src="../../../lib/cloudcast.js"></script>
     <script src="../../../lib/recorder.js"></script>
     <script src="openhab.js"></script>
@@ -82,8 +85,10 @@ var content = $('#content');
 var input = $('#input');
 var status = $('#status');
 
+var CORS_PROXY='https://cors-anywhere.herokuapp.com/';
+
 var url;
- url = 'https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/rest/sitemaps/demo';
+ url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
  url = 'demo.json';
 var openhab;
 
@@ -222,6 +227,46 @@ function update_path() {
 
 }
 
+function update_switch(link, button, data) {
+    var command = "GET";
+    if (data) {
+        command = "PUT";
+    }
+
+    // Get the state of the switch
+    var url = CORS_PROXY + link;
+    button.button('loading');
+    $.ajax({
+        url: url + '/state',
+        method: command,
+        data: data,
+        dataType: "text",
+        contentType: "text/plain",
+        context: { $button: button,
+                  },
+        success: function (state) {
+            console.dir(state);
+            if (data) {
+                update_switch(link, button);
+
+            } else {
+                if (state=="ON") {
+                    this.$button.button('on');
+                    this.$button.addClass('active');
+                    this.$button.attr('aria-pressed', 'true');
+                } else {
+                    this.$button.button('off');
+                    this.$button.removeClass('active');
+                    this.$button.attr('aria-pressed', 'false');
+                }
+
+                this.$button.data("state", state);
+            }
+        },
+        fail: function () {},
+    });
+}
+
 function update_current_actions() {
     $('#current-actions').empty();
     $('#current-labels').empty();
@@ -238,7 +283,7 @@ function update_current_actions() {
 
         switch (action.type) {
             case "navigation":
-                var $markup = $('<button type="button" class="btn btn-default">'+ action_text +'</button>');
+                var $markup = $('<button type="button" class="btn btn-default">' + action_text + '</button>');
                 $markup.data('action', action);
                 $markup.click(function(event) {
                     console.dir($(this).data('action'));
@@ -248,11 +293,24 @@ function update_current_actions() {
                 break;
 
             case "label":
-                var $markup = $('<li class="list-group-item">'+ action_text +'</li>');
+                var $markup = $('<li class="list-group-item">' + action_text + '</li>');
                 $('#current-labels').append($markup);
+                break;
 
             case "switch":
-                console.dir(action);
+                var $markup = $('<button type="button" class="btn btn-default" data-off-text="' + action_text + ' [ off ]" data-on-text="' + action_text + ' [ on ]" data-loading-text="' + action_text + ' [ loading... ]" autocomplete="off">' + action_text + '</button>');
+                var link = action.parameters.widget.item.link;
+
+                $markup.click(function() {
+                    var state = $(this).data("state");
+                    update_switch(link, $(this), state=="ON" ? "OFF" : "ON");
+                });
+
+                $('#current-actions').append($markup);
+
+                update_switch(link, $markup);
+
+                break;
 
             default:
                 break;
