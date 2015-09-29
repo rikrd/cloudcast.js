@@ -19,6 +19,7 @@
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.0/css/bootstrap-toggle.min.css" rel="stylesheet">
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.0/js/bootstrap-toggle.min.js"></script>
 
+    <script src="google_recogniser.js"></script>
     <script src="../../../lib/cloudcast.js"></script>
     <script src="../../../lib/recorder.js"></script>
     <script src="openhab.js"></script>
@@ -92,6 +93,21 @@ var url;
  url = 'demo.json';
 var openhab;
 
+var gspeech = new GoogleCommandRecogniser({
+        onCommandDetected : function(command, transcript) {
+            __log("Command detected: " + JSON.stringify(command) + "  From transcript: " + transcript);
+            if (command) {
+                openhab.performAction(command);
+            }
+        },
+        onPartialCommandDetected : function(command, transcript) {
+            __log("Partial command detected: " + JSON.stringify(command) + "  From transcript: " + transcript);
+            if (command) {
+                openhab.performAction(command);
+            }
+        }
+});
+
 var cloudcast = new Cloudcast({
         recorderWorkerPath : '../../lib/recorderWorker.js',
         onInited : function() {
@@ -133,6 +149,11 @@ var cloudcast = new Cloudcast({
 function __message(code, data) {
 	$("#log")[0].innerHTML = "msg: " + code + ": " + (data || '') + "\n" + $("#log")[0].innerHTML;
 }
+
+function __log(data) {
+	$("#log")[0].innerHTML = "msg: " + (data || '') + "\n" + $("#log")[0].innerHTML;
+}
+
 
 function action() {
     var request = $.ajax
@@ -317,11 +338,12 @@ function update_current_actions() {
         }
     }
 
-    // TODO: handle the click events of the buttons
+    gspeech.setCommands(current_actions);
 }
 
 window.onload = function() {
     init_openhab();
+    gspeech.startRecognition();
 }
 </script>
 </body>
