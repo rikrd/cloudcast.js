@@ -183,6 +183,11 @@
                     config.onNavigated();
                     break;
 
+                case "switch":
+                    // TODO: implement a switch toggle
+                    console.dir(action);
+                    break;
+
                 default:
                     console.error("Action " + action.type + "not yet implmented.");
                     break;

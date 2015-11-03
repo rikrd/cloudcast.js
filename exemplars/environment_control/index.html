@@ -256,15 +256,17 @@ function update_path() {
 
 function update_switch(link, button, data) {
     var command = "GET";
+    var suffix = "/state"
     if (data) {
-        command = "PUT";
+        command = "POST";
+        suffix = "";
     }
 
     // Get the state of the switch
     var url = CORS_PROXY + link;
     button.button('loading');
     $.ajax({
-        url: url + '/state',
+        url: url + suffix,
         method: command,
         data: data,
         dataType: "text",
@@ -327,6 +329,7 @@ function update_current_actions() {
             case "switch":
                 var $markup = $('<button type="button" class="btn btn-default" data-off-text="' + action_text + ' [ off ]" data-on-text="' + action_text + ' [ on ]" data-loading-text="' + action_text + ' [ loading... ]" autocomplete="off">' + action_text + '</button>');
                 $markup.data("link", action.parameters.widget.item.link);
+                $markup.data("action", action);
 
                 $markup.click(function() {
                     var state = $(this).data("state");
