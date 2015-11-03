@@ -3,6 +3,11 @@
 (function(window){
 	var SERVER = "https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/rest/sitemaps/demo";
 
+    // Use "widgets" for OpenHAB 2.x
+    //var WIDGETS_PROPERTY = "widgets";
+    // and "widget" for OpenHAB 1.x
+    var WIDGETS_PROPERTY = "widget";
+
 	// Error codes (mostly following Android error names and codes)
 	var ERR_NETWORK = 2;
 	var ERR_AUDIO = 3;
@@ -58,9 +63,9 @@
 			config.onEvent(MSG_DOWNLOADING_SITEMAP, "Downloading sitemap ...");
             var request = $.ajax({
                     type       : "GET",
-                    url        : config.server,
+                    url        : config.server
                     // TODO: from the server string if crossDomain is necessary
-                    //crossDomain: true,
+                    // crossDomain: true
                 });
 
             request.done( function(data) {
@@ -89,8 +94,8 @@
 
         function map_to_choices(map, path_prefix) {
             var result = [];
-            for (var i=0; i<map.widgets.length; i++) {
-                result = result.concat(widget_to_choices(map.widgets[i], path_prefix.concat(["widgets", i])));
+            for (var i=0; i<map[WIDGETS_PROPERTY].length; i++) {
+                result = result.concat(widget_to_choices(map[WIDGETS_PROPERTY][i], path_prefix.concat([WIDGETS_PROPERTY, i])));
             }
 
             return result;

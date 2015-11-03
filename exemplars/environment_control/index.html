@@ -86,11 +86,16 @@ var content = $('#content');
 var input = $('#input');
 var status = $('#status');
 
-var CORS_PROXY='https://cors-anywhere.herokuapp.com/';
+//var CORS_PROXY='https://cors-anywhere.herokuapp.com/';
+//var CORS_PROXY='https://crossorigin.me/';
+var CORS_PROXY='';
 
 var url;
  url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
  url = 'demo.json';
+ url = 'bologna_aias_1.7.json';
+ //url = CORS_PROXY + 'http://10.9.8.8:8080/rest/sitemaps/demo';
+ //url = 'bologna_aias_2.0.json';
 var openhab;
 
 var gspeech = new GoogleCommandRecogniser({
@@ -105,7 +110,8 @@ var gspeech = new GoogleCommandRecogniser({
             if (command) {
                 openhab.performAction(command);
             }
-        }
+        },
+        language: "it",
 });
 
 var cloudcast = new Cloudcast({
@@ -320,16 +326,16 @@ function update_current_actions() {
 
             case "switch":
                 var $markup = $('<button type="button" class="btn btn-default" data-off-text="' + action_text + ' [ off ]" data-on-text="' + action_text + ' [ on ]" data-loading-text="' + action_text + ' [ loading... ]" autocomplete="off">' + action_text + '</button>');
-                var link = action.parameters.widget.item.link;
+                $markup.data("link", action.parameters.widget.item.link);
 
                 $markup.click(function() {
                     var state = $(this).data("state");
-                    update_switch(link, $(this), state=="ON" ? "OFF" : "ON");
+                    update_switch($(this).data("link"), $(this), state=="ON" ? "OFF" : "ON");
                 });
 
                 $('#current-actions').append($markup);
 
-                update_switch(link, $markup);
+                update_switch($markup.data("link"), $markup);
 
                 break;
 

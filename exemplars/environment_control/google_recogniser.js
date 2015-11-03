@@ -9,6 +9,7 @@
 		config.onPartialCommandDetected = config.onPartialCommandDetected || function(command, transcript) {};
         this.commands = [];
         config.recognizing = false;
+        config.language = config.language || 'en-US';
 
         var _self = this;
 
@@ -19,6 +20,7 @@
           config.recognition = new webkitSpeechRecognition();
           config.recognition.continuous = true;
           config.recognition.interimResults = true;
+          config.recognition.lang = config.language;
 
           config.recognition.onstart = function() {
             config.recognizing = true;
