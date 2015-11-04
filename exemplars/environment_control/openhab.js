@@ -35,6 +35,8 @@
 		config.onEvent = config.onEvent || function(e, data) {};
 		config.onError = config.onError || function(e, data) {};
 		config.onNavigated = config.onNavigated || function() {};
+		config.onActionChanged = config.onActionChanged || function(action) {};
+
         config.sitemap = null;
 
         // This is a list of path elements
@@ -176,6 +178,49 @@
             config.onNavigated();
         }
 
+        function update_switch(link, button, data) {
+            var command = "GET";
+            var suffix = "/state"
+            if (data) {
+                command = "POST";
+                suffix = "";
+            }
+
+            // Get the state of the switch
+            var url = CORS_PROXY + link;
+            button.button('loading');
+            $.ajax({
+                url: url + suffix,
+                method: command,
+                data: data,
+                dataType: "text",
+                contentType: "text/plain",
+                context: { $button: button,
+                          },
+                success: function (state) {
+                    console.dir(state);
+                    if (data) {
+                        update_switch(link, button);
+
+                    } else {
+                        if (state=="ON") {
+                            this.$button.button('on');
+                            this.$button.addClass('active');
+                            this.$button.attr('aria-pressed', 'true');
+                        } else {
+                            this.$button.button('off');
+                            this.$button.removeClass('active');
+                            this.$button.attr('aria-pressed', 'false');
+                        }
+
+                        this.$button.data("state", state);
+                    }
+                },
+                fail: function () {},
+            });
+        }
+
+
         this.performAction = function(action) {
             switch(action.type) {
                 case "navigation":
@@ -186,6 +231,34 @@
                 case "switch":
                     // TODO: implement a switch toggle
                     console.dir(action);
+
+                    var current_state;
+
+                    $.ajax({
+                        method: "GET",
+                        dataType: "text",
+                        contentType: "text/plain",
+                        url: action.parameters.widget.item.link + "/state",
+                        success: function (result) {
+                            current_state = result;
+                        },
+                        async: false
+                    });
+
+                    $.ajax({
+                        url: action.parameters.widget.item.link,
+                        method: "POST",
+                        dataType: "text",
+                        contentType: "text/plain",
+                        data: current_state=="ON" ? "OFF" : "ON",
+                        success: function (result) {
+                            current_state = result;
+                        },
+                        async: false
+                    });
+
+                    config.onActionChanged(action);
+
                     break;
 
                 default:

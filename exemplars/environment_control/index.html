@@ -91,8 +91,7 @@ var status = $('#status');
 var CORS_PROXY='';
 
 var url;
- url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
- url = 'demo.json';
+ //url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
  url = 'bologna_aias_1.7.json';
  //url = CORS_PROXY + 'http://10.9.8.8:8080/rest/sitemaps/demo';
  //url = 'bologna_aias_2.0.json';
@@ -207,7 +206,8 @@ function init_openhab() {
         onNavigated: update_openhab,
         onEvent: function (code, data) {
             __message(code, "OpenHab: " + data);
-        }
+        },
+        onActionChanged: actionchange_openhab
     });
 
     openhab.init();
@@ -222,6 +222,16 @@ function inited_openhab() {
     update_openhab();
 
     $('#accessing-sitemap-wait-dialog').modal('hide');
+}
+
+function actionchange_openhab(action) {
+    // Search the button that must be updated by comparing the action to the button actions
+    $('#current-actions > button').each(function(j, element) {
+        console.dir($(element));
+        if ($(element).data("action") === action) {
+            update_switch($(element).data("link"), $(element));
+        }
+    });
 }
 
 function update_path() {
@@ -332,8 +342,9 @@ function update_current_actions() {
                 $markup.data("action", action);
 
                 $markup.click(function() {
-                    var state = $(this).data("state");
-                    update_switch($(this).data("link"), $(this), state=="ON" ? "OFF" : "ON");
+                    // var state = $(this).data("state");
+                    // update_switch($(this).data("link"), $(this), state=="ON" ? "OFF" : "ON");
+                    openhab.performAction($(this).data('action'))
                 });
 
                 $('#current-actions').append($markup);
