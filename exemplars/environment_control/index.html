@@ -92,8 +92,8 @@ var CORS_PROXY='';
 
 var url;
  //url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
- url = 'bologna_aias_1.7.json';
- //url = CORS_PROXY + 'http://10.9.8.8:8080/rest/sitemaps/demo';
+ //url = 'bologna_aias_1.7.json';
+ url = CORS_PROXY + 'http://10.9.8.8:8080/rest/sitemaps/demo';
  //url = 'bologna_aias_2.0.json';
 var openhab;
 
@@ -107,7 +107,7 @@ var gspeech = new GoogleCommandRecogniser({
         onPartialCommandDetected : function(command, transcript) {
             __log("Partial command detected: " + JSON.stringify(command) + "  From transcript: " + transcript);
             if (command) {
-                openhab.performAction(command);
+                //openhab.performAction(command);
             }
         },
         language: "it",

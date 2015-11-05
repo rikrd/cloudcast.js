@@ -65,9 +65,8 @@
 			config.onEvent(MSG_DOWNLOADING_SITEMAP, "Downloading sitemap ...");
             var request = $.ajax({
                     type       : "GET",
-                    url        : config.server
-                    // TODO: from the server string if crossDomain is necessary
-                    // crossDomain: true
+                    url        : config.server,
+                    data       : {type: "json"}
                 });
 
             request.done( function(data) {
