@@ -29,7 +29,9 @@
 
 <div class="container">
     <div class="page-header">
-        <h1>OpenHab voice controller <small>powered by CloudCast</small></h1>
+        <h1>OpenHab voice controller
+            <small>powered by CloudCast</small>
+        </h1>
     </div>
 
     <ol id="path" class="breadcrumb">
@@ -66,7 +68,8 @@
                 </div>
                 <div class="modal-body">
                     <div class="progress">
-                        <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                        <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="100"
+                             aria-valuemin="0" aria-valuemax="100" style="width: 100%">
                             <span class="sr-only">100% Complete</span>
                         </div>
                     </div>
@@ -77,294 +80,305 @@
 </div>
 
 <script type="text/javascript">
-var currentState = null;
-var sitemap = null;
-var currentChoices = [];
-var availableWorkers = 0;
+    var currentState = null;
+    var sitemap = null;
+    var currentChoices = [];
+    var availableWorkers = 0;
 
-var content = $('#content');
-var input = $('#input');
-var status = $('#status');
+    var content = $('#content');
+    var input = $('#input');
+    var status = $('#status');
 
-//var CORS_PROXY='https://cors-anywhere.herokuapp.com/';
-//var CORS_PROXY='https://crossorigin.me/';
-var CORS_PROXY='';
+    //var CORS_PROXY='https://cors-anywhere.herokuapp.com/';
+    //var CORS_PROXY='https://crossorigin.me/';
+    var CORS_PROXY = '';
 
-var url;
- //url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
- //url = 'bologna_aias_1.7.json';
- url = CORS_PROXY + 'http://10.9.8.8:8080/rest/sitemaps/demo';
- //url = 'bologna_aias_2.0.json';
-var openhab;
+    var url;
+    //url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
+    //url = 'bologna_aias_1.7.json';
+    url = 'http://10.9.8.8:8080/rest/sitemaps/demo';
+    //url = 'bologna_aias_2.0.json';
+    var openhab;
 
-var gspeech = new GoogleCommandRecogniser({
-        onCommandDetected : function(command, transcript) {
+    var blacklist = {};
+
+    var gspeech = new GoogleCommandRecogniser({
+        onCommandDetected: function (command, transcript) {
             __log("Command detected: " + JSON.stringify(command) + "  From transcript: " + transcript);
-            if (command) {
+            if (command && !blacklist[command]) {
                 openhab.performAction(command);
+                blacklist[command] = true;
+                setTimeout(function () {
+                    blacklist[command] = false;
+                }, 500);
             }
         },
-        onPartialCommandDetected : function(command, transcript) {
+        onPartialCommandDetected: function (command, transcript) {
             __log("Partial command detected: " + JSON.stringify(command) + "  From transcript: " + transcript);
-            if (command) {
-                //openhab.performAction(command);
+            if (command && !blacklist[command]) {
+                openhab.performAction(command);
+                blacklist[command] = true;
+                setTimeout(function () {
+                    blacklist[command] = false;
+                }, 500);
             }
         },
         language: "it",
-});
+    });
 
-var cloudcast = new Cloudcast({
-        recorderWorkerPath : '../../lib/recorderWorker.js',
-        onInited : function() {
+    var cloudcast = new Cloudcast({
+        recorderWorkerPath: '../../lib/recorderWorker.js',
+        onInited: function () {
             cloudcast.open();
         },
-        onReadyForSpeech : function() {
-			__message("READY FOR SPEECH");
+        onReadyForSpeech: function () {
+            __message("READY FOR SPEECH");
             $("#choose").prop("disabled", true);
-		},
-        onServerStatus : function(json) {
+        },
+        onServerStatus: function (json) {
             availableWorkers = json.num_workers_available;
-			if (availableWorkers != 0 && cloudcast.state < cloudcast.OPENED) {
+            if (availableWorkers != 0 && cloudcast.state < cloudcast.OPENED) {
                 cloudcast.open();
-			}
-		},
-        onOpened : function() {
+            }
+        },
+        onOpened: function () {
             $('#choose').prop('disabled', false);
         },
-        onClosed : function() {
+        onClosed: function () {
             $('#choose').prop('disabled', true);
             if (availableWorkers != 0) {
                 cloudcast.open();
-			}
+            }
         },
-        onResults : function(hypos) {
+        onResults: function (hypos) {
             var best_transcript = hypos[0].transcript;
             console.log(best_transcript);
             action();
         },
-        onError : function(err, data) {
+        onError: function (err, data) {
             console.log('Error: ' + err + ' ' + data);
             cloudcast.cancel();
         },
-        onEvent : function(code, data) {
-			__message(code, "CloudCast: " + data);
-		}
-});
-
-function __message(code, data) {
-	$("#log")[0].innerHTML = "msg: " + code + ": " + (data || '') + "\n" + $("#log")[0].innerHTML;
-}
-
-function __log(data) {
-	$("#log")[0].innerHTML = "msg: " + (data || '') + "\n" + $("#log")[0].innerHTML;
-}
-
-
-function action() {
-    var request = $.ajax
-    ({
-        type       : "POST",
-        url        : url + "rest/items/Light_FF_Office_Ceiling",
-        data       : "ON",
-        headers    : { "Content-Type": "text/plain" },
-        crossDomain: true
+        onEvent: function (code, data) {
+            __message(code, "CloudCast: " + data);
+        }
     });
 
-    request.done( function(data)
-    {
-        console.dir(data);
-        sitemap = data;
-        updateCurrentChoices();
-    });
+    function __message(code, data) {
+        $("#log")[0].innerHTML = "msg: " + code + ": " + (data || '') + "\n" + $("#log")[0].innerHTML;
+    }
 
-    request.fail( function(jqXHR, textStatus )
-    {
-        console.log( "Failure: " + textStatus );
-    });
+    function __log(data) {
+        $("#log")[0].innerHTML = "msg: " + (data || '') + "\n" + $("#log")[0].innerHTML;
+    }
 
-}
 
-function choose() {
-        cloudcast.setTask({"task": {
-                            "type": "forced-choice",
-                            "params": {
-                                "choices": currentChoices,
-                                }
-                            }
-                        });
+    function action() {
+        var request = $.ajax
+        ({
+            type: "POST",
+            url: url + "rest/items/Light_FF_Office_Ceiling",
+            data: "ON",
+            headers: {"Content-Type": "text/plain"},
+            crossDomain: true
+        });
+
+        request.done(function (data) {
+            console.dir(data);
+            sitemap = data;
+            updateCurrentChoices();
+        });
+
+        request.fail(function (jqXHR, textStatus) {
+            console.log("Failure: " + textStatus);
+        });
+
+    }
+
+    function choose() {
+        cloudcast.setTask({
+            "task": {
+                "type": "forced-choice",
+                "params": {
+                    "choices": currentChoices,
+                }
+            }
+        });
 
         cloudcast.startListening();
         window.setTimeout(cloudcast.stopListening, 2000);
-}
-
-function init_openhab() {
-    $('#accessing-sitemap-wait-dialog').modal('show');
-
-    openhab = new Openhab({
-        server: url,
-        onInited: inited_openhab,
-        onNavigated: update_openhab,
-        onEvent: function (code, data) {
-            __message(code, "OpenHab: " + data);
-        },
-        onActionChanged: actionchange_openhab
-    });
-
-    openhab.init();
-}
-
-function update_openhab() {
-    update_current_actions();
-    update_path();
-}
-
-function inited_openhab() {
-    update_openhab();
-
-    $('#accessing-sitemap-wait-dialog').modal('hide');
-}
-
-function actionchange_openhab(action) {
-    // Search the button that must be updated by comparing the action to the button actions
-    $('#current-actions > button').each(function(j, element) {
-        console.dir($(element));
-        if ($(element).data("action") === action) {
-            update_switch($(element).data("link"), $(element));
-        }
-    });
-}
-
-function update_path() {
-    $('#path').empty();
-
-    var state = openhab.getState().slice();
-
-    state.splice(0, 0, {name: "Home"});
-
-    for (var i=0; i<state.length; i++) {
-        var name = state[i].name;
-        var $markup;
-        if (i<state.length-1) {
-            $markup = $('<li><a href="#">' + name + '</a></li>');
-            $markup.data('index', i);
-            $markup.click(function(event) {
-                var index = $(this).data('index');
-
-                var currentState = openhab.getState().slice();
-                currentState.splice(index, Number.MAX_VALUE);
-                openhab.setState(currentState);
-            });
-        } else {
-            $markup = $('<li class="active">' + name + '</li>');
-        }
-        $('#path').append($markup);
     }
 
-    // TODO: handle the click events of the breadcrumb
+    function init_openhab() {
+        $('#accessing-sitemap-wait-dialog').modal('show');
 
-}
+        openhab = new Openhab({
+            server: url,
+            onInited: inited_openhab,
+            onNavigated: update_openhab,
+            onEvent: function (code, data) {
+                __message(code, "OpenHab: " + data);
+            },
+            onActionChanged: actionchange_openhab
+        });
 
-function update_switch(link, button, data) {
-    var command = "GET";
-    var suffix = "/state"
-    if (data) {
-        command = "POST";
-        suffix = "";
+        openhab.init();
     }
 
-    // Get the state of the switch
-    var url = CORS_PROXY + link;
-    button.button('loading');
-    $.ajax({
-        url: url + suffix,
-        method: command,
-        data: data,
-        dataType: "text",
-        contentType: "text/plain",
-        context: { $button: button,
-                  },
-        success: function (state) {
-            console.dir(state);
-            if (data) {
-                update_switch(link, button);
+    function update_openhab() {
+        update_current_actions();
+        update_path();
+    }
 
-            } else {
-                if (state=="ON") {
-                    this.$button.button('on');
-                    this.$button.addClass('active');
-                    this.$button.attr('aria-pressed', 'true');
-                } else {
-                    this.$button.button('off');
-                    this.$button.removeClass('active');
-                    this.$button.attr('aria-pressed', 'false');
-                }
+    function inited_openhab() {
+        update_openhab();
 
-                this.$button.data("state", state);
+        $('#accessing-sitemap-wait-dialog').modal('hide');
+    }
+
+    function actionchange_openhab(action) {
+        // Search the button that must be updated by comparing the action to the button actions
+        $('#current-actions > button').each(function (j, element) {
+            console.dir($(element));
+            if ($(element).data("action") === action) {
+                update_switch($(element).data("link"), $(element));
             }
-        },
-        fail: function () {},
-    });
-}
-
-function update_current_actions() {
-    $('#current-actions').empty();
-    $('#current-labels').empty();
-
-    var current_actions = openhab.getCurrentActions();
-    console.dir(current_actions);
-
-    for (var i=0; i<current_actions.length; i++) {
-        var action = current_actions[i];
-        var action_text = action.parameters.label;
-        if (action.parameters.speech_command && action.parameters.speech_command != action.parameters.label) {
-            action_text += '<br/>' + action.parameters.speech_command;
-        }
-
-        switch (action.type) {
-            case "navigation":
-                var $markup = $('<button type="button" class="btn btn-default">' + action_text + '</button>');
-                $markup.data('action', action);
-                $markup.click(function(event) {
-                    console.dir($(this).data('action'));
-                    openhab.performAction($(this).data('action'));
-                });
-                $('#current-actions').append($markup);
-                break;
-
-            case "label":
-                var $markup = $('<li class="list-group-item">' + action_text + '</li>');
-                $('#current-labels').append($markup);
-                break;
-
-            case "switch":
-                var $markup = $('<button type="button" class="btn btn-default" data-off-text="' + action_text + ' [ off ]" data-on-text="' + action_text + ' [ on ]" data-loading-text="' + action_text + ' [ loading... ]" autocomplete="off">' + action_text + '</button>');
-                $markup.data("link", action.parameters.widget.item.link);
-                $markup.data("action", action);
-
-                $markup.click(function() {
-                    // var state = $(this).data("state");
-                    // update_switch($(this).data("link"), $(this), state=="ON" ? "OFF" : "ON");
-                    openhab.performAction($(this).data('action'))
-                });
-
-                $('#current-actions').append($markup);
-
-                update_switch($markup.data("link"), $markup);
-
-                break;
-
-            default:
-                break;
-        }
+        });
     }
 
-    gspeech.setCommands(current_actions);
-}
+    function update_path() {
+        $('#path').empty();
 
-window.onload = function() {
-    init_openhab();
-    gspeech.startRecognition();
-}
+        var state = openhab.getState().slice();
+
+        state.splice(0, 0, {name: "Home"});
+
+        for (var i = 0; i < state.length; i++) {
+            var name = state[i].name;
+            var $markup;
+            if (i < state.length - 1) {
+                $markup = $('<li><a href="#">' + name + '</a></li>');
+                $markup.data('index', i);
+                $markup.click(function (event) {
+                    var index = $(this).data('index');
+
+                    var currentState = openhab.getState().slice();
+                    currentState.splice(index, Number.MAX_VALUE);
+                    openhab.setState(currentState);
+                });
+            } else {
+                $markup = $('<li class="active">' + name + '</li>');
+            }
+            $('#path').append($markup);
+        }
+
+        // TODO: handle the click events of the breadcrumb
+
+    }
+
+    function update_switch(link, button, data) {
+        var command = "GET";
+        var suffix = "/state"
+        if (data) {
+            command = "POST";
+            suffix = "";
+        }
+
+        // Get the state of the switch
+        var url = CORS_PROXY + link;
+        button.button('loading');
+        $.ajax({
+            url: url + suffix,
+            method: command,
+            data: data,
+            dataType: "text",
+            contentType: "text/plain",
+            context: {
+                $button: button,
+            },
+            success: function (state) {
+                console.dir(state);
+                if (data) {
+                    update_switch(link, button);
+
+                } else {
+                    if (state == "ON") {
+                        this.$button.button('on');
+                        this.$button.addClass('active');
+                        this.$button.attr('aria-pressed', 'true');
+                    } else {
+                        this.$button.button('off');
+                        this.$button.removeClass('active');
+                        this.$button.attr('aria-pressed', 'false');
+                    }
+
+                    this.$button.data("state", state);
+                }
+            },
+            fail: function () {
+            },
+        });
+    }
+
+    function update_current_actions() {
+        $('#current-actions').empty();
+        $('#current-labels').empty();
+
+        var current_actions = openhab.getCurrentActions();
+        console.dir(current_actions);
+
+        for (var i = 0; i < current_actions.length; i++) {
+            var action = current_actions[i];
+            var action_text = action.parameters.label;
+            if (action.parameters.speech_command && action.parameters.speech_command != action.parameters.label) {
+                action_text += '<br/>' + action.parameters.speech_command;
+            }
+
+            switch (action.type) {
+                case "navigation":
+                    var $markup = $('<button type="button" class="btn btn-default">' + action_text + '</button>');
+                    $markup.data('action', action);
+                    $markup.click(function (event) {
+                        console.dir($(this).data('action'));
+                        openhab.performAction($(this).data('action'));
+                    });
+                    $('#current-actions').append($markup);
+                    break;
+
+                case "label":
+                    var $markup = $('<li class="list-group-item">' + action_text + '</li>');
+                    $('#current-labels').append($markup);
+                    break;
+
+                case "switch":
+                    var $markup = $('<button type="button" class="btn btn-default" data-off-text="' + action_text + ' [ off ]" data-on-text="' + action_text + ' [ on ]" data-loading-text="' + action_text + ' [ loading... ]" autocomplete="off">' + action_text + '</button>');
+                    $markup.data("link", action.parameters.widget.item.link);
+                    $markup.data("action", action);
+
+                    $markup.click(function () {
+                        // var state = $(this).data("state");
+                        // update_switch($(this).data("link"), $(this), state=="ON" ? "OFF" : "ON");
+                        openhab.performAction($(this).data('action'))
+                    });
+
+                    $('#current-actions').append($markup);
+
+                    update_switch($markup.data("link"), $markup);
+
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        gspeech.setCommands(current_actions);
+    }
+
+    window.onload = function () {
+        init_openhab();
+        gspeech.startRecognition();
+    }
 </script>
 </body>
 </html>

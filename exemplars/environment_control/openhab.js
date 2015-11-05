@@ -1,41 +1,46 @@
 "use strict";
 
-(function(window){
-	var SERVER = "https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/rest/sitemaps/demo";
+(function (window) {
+    var SERVER = "https://cors-anywhere.herokuapp.com/http://demo.openhab.org:9080/rest/sitemaps/demo";
 
     // Use "widgets" for OpenHAB 2.x
     //var WIDGETS_PROPERTY = "widgets";
     // and "widget" for OpenHAB 1.x
     var WIDGETS_PROPERTY = "widget";
 
-	// Error codes (mostly following Android error names and codes)
-	var ERR_NETWORK = 2;
-	var ERR_AUDIO = 3;
-	var ERR_SERVER = 4;
-	var ERR_CLIENT = 5;
+    // Error codes (mostly following Android error names and codes)
+    var ERR_NETWORK = 2;
+    var ERR_AUDIO = 3;
+    var ERR_SERVER = 4;
+    var ERR_CLIENT = 5;
 
-	// Event codes
-	var MSG_DOWNLOADING_SITEMAP = 1;
-	var MSG_DOWNLOADED_SITEMAP = 2;
-	var MSG_INIT_RECORDER = 3;
-	var MSG_RECORDING = 4;
-	var MSG_SEND = 5;
-	var MSG_SEND_EMPTY = 6;
-	var MSG_SEND_EOS = 7;
-	var MSG_WEB_SOCKET = 8;
-	var MSG_WEB_SOCKET_OPEN = 9;
-	var MSG_WEB_SOCKET_CLOSE = 10;
-	var MSG_STOP = 11;
-	var MSG_SERVER_CHANGED = 12;
+    // Event codes
+    var MSG_DOWNLOADING_SITEMAP = 1;
+    var MSG_DOWNLOADED_SITEMAP = 2;
+    var MSG_INIT_RECORDER = 3;
+    var MSG_RECORDING = 4;
+    var MSG_SEND = 5;
+    var MSG_SEND_EMPTY = 6;
+    var MSG_SEND_EOS = 7;
+    var MSG_WEB_SOCKET = 8;
+    var MSG_WEB_SOCKET_OPEN = 9;
+    var MSG_WEB_SOCKET_CLOSE = 10;
+    var MSG_STOP = 11;
+    var MSG_SERVER_CHANGED = 12;
 
-	var Openhab = function(cfg) {
-		var config = cfg || {};
-		config.server = config.server || SERVER;
-		config.onInited = config.onInited || function() {};
-		config.onEvent = config.onEvent || function(e, data) {};
-		config.onError = config.onError || function(e, data) {};
-		config.onNavigated = config.onNavigated || function() {};
-		config.onActionChanged = config.onActionChanged || function(action) {};
+    var Openhab = function (cfg) {
+        var config = cfg || {};
+        config.server = config.server || SERVER;
+        config.onInited = config.onInited || function () {
+            };
+        config.onEvent = config.onEvent || function (e, data) {
+            };
+        config.onError = config.onError || function (e, data) {
+            };
+        config.onNavigated = config.onNavigated || function () {
+            };
+        config.onActionChanged = config.onActionChanged || function (action) {
+            };
 
         config.sitemap = null;
 
@@ -51,41 +56,40 @@
 
         this.state = this.NOT_INITED;
 
-		// Returns the configuration
-		this.getConfig = function() {
-			return config;
-		}
+        // Returns the configuration
+        this.getConfig = function () {
+            return config;
+        }
 
-        this.setSitemap = function(sitemap) {
+        this.setSitemap = function (sitemap) {
             this.sitemap = sitemap;
         }
 
-		// Downloads the sitemap
-		this.init = function() {
-			config.onEvent(MSG_DOWNLOADING_SITEMAP, "Downloading sitemap ...");
+        // Downloads the sitemap
+        this.init = function () {
+            config.onEvent(MSG_DOWNLOADING_SITEMAP, "Downloading sitemap ...");
             var request = $.ajax({
-                    type       : "GET",
-                    url        : config.server,
-                    data       : {type: "json"}
-                });
+                type: "GET",
+                url: config.server,
+                data: {type: "json"}
+            });
 
-            request.done( function(data) {
+            request.done(function (data) {
                 config.sitemap = data;
                 config.onEvent(MSG_DOWNLOADED_SITEMAP, "Downloaded sitemap ...");
 
                 config.onInited();
             });
 
-            request.fail( function(jqXHR, textStatus )
-            {
+            request.fail(function (jqXHR, textStatus) {
                 config.onError(ERR_CLIENT, "Failed to download sitemap : " + textStatus);
             });
 
-			this.state = this.INITED;
-		}
+            this.state = this.INITED;
+        }
 
         // Get current choices
-        this.getCurrentActions = function() {
+        this.getCurrentActions = function () {
             var current_map = this.getCurrentMap();
 
             var choices = map_to_choices(current_map, []);
@@ -95,7 +99,7 @@
 
         function map_to_choices(map, path_prefix) {
             var result = [];
-            for (var i=0; i<map[WIDGETS_PROPERTY].length; i++) {
+            for (var i = 0; i < map[WIDGETS_PROPERTY].length; i++) {
                 result = result.concat(widget_to_choices(map[WIDGETS_PROPERTY][i], path_prefix.concat([WIDGETS_PROPERTY, i])));
             }
 
@@ -108,19 +112,19 @@
 
         function widget_to_choices(widget, path_prefix) {
             var result = [];
-            switch(widget.type) {
+            switch (widget.type) {
                 case "Group":
                     result = [{
-                                type: "navigation",
-                                parameters: {
-                                    label: widget.label,
-                                    speech_command: widget.label,
-                                    path: {
-                                        name: widget.label,
-                                        keys: path_prefix.concat(["linkedPage"])
-                                    }
-                                }
-                            }];
+                        type: "navigation",
+                        parameters: {
+                            label: widget.label,
+                            speech_command: widget.label,
+                            path: {
+                                name: widget.label,
+                                keys: path_prefix.concat(["linkedPage"])
+                            }
+                        }
+                    }];
                     break;
 
                 case "Frame":
@@ -130,34 +134,34 @@
                 case "Text":
                     if (widget.linkedPage) {
                         result = [{
-                                    type: "navigation",
-                                    parameters: {
-                                        label: widget.label,
-                                        speech_command: widget.label,
-                                        path: {
-                                            name: widget.label,
-                                            keys: path_prefix.concat(["linkedPage"])
-                                        }
-                                    }
-                                }];
+                            type: "navigation",
+                            parameters: {
+                                label: widget.label,
+                                speech_command: widget.label,
+                                path: {
+                                    name: widget.label,
+                                    keys: path_prefix.concat(["linkedPage"])
+                                }
+                            }
+                        }];
                     } else {
                         result = [{
-                                    type: "label",
-                                    parameters: {
-                                        label: widget.label,
-                                    }
-                                }];
+                            type: "label",
+                            parameters: {
+                                label: widget.label,
+                            }
+                        }];
                     }
                     break;
 
                 case "Switch":
                     result = [{
-                                type: "switch",
-                                parameters: {
-                                    label: widget.label,
-                                    widget: widget,
-                                }
-                            }];
+                        type: "switch",
+                        parameters: {
+                            label: widget.label,
+                            widget: widget,
+                        }
+                    }];
                     break;
 
                 default:
@@ -168,11 +172,11 @@
             return result;
         }
 
-        this.getState = function() {
+        this.getState = function () {
             return config.currentState;
         }
 
-        this.setState = function(state) {
+        this.setState = function (state) {
             config.currentState = state;
             config.onNavigated();
         }
@@ -194,15 +198,16 @@
                 data: data,
                 dataType: "text",
                 contentType: "text/plain",
-                context: { $button: button,
-                          },
+                context: {
+                    $button: button,
+                },
                 success: function (state) {
                     console.dir(state);
                     if (data) {
                         update_switch(link, button);
 
                     } else {
-                        if (state=="ON") {
+                        if (state == "ON") {
                             this.$button.button('on');
                             this.$button.addClass('active');
                             this.$button.attr('aria-pressed', 'true');
@@ -215,13 +220,14 @@
                         this.$button.data("state", state);
                     }
                 },
-                fail: function () {},
+                fail: function () {
+                },
             });
         }
 
 
-        this.performAction = function(action) {
-            switch(action.type) {
+        this.performAction = function (action) {
+            switch (action.type) {
                 case "navigation":
                     config.currentState.push(action.parameters.path);
                     config.onNavigated();
@@ -249,7 +255,7 @@
                         method: "POST",
                         dataType: "text",
                         contentType: "text/plain",
-                        data: current_state=="ON" ? "OFF" : "ON",
+                        data: current_state == "ON" ? "OFF" : "ON",
                         success: function (result) {
                             current_state = result;
                         },
@@ -267,20 +273,20 @@
         }
 
         // Navigate to the current node of the sitemap and return the content
-        this.getCurrentMap = function() {
+        this.getCurrentMap = function () {
             var map = config.sitemap.homepage;
 
             // Go to the current node
-            for (var i=0; i<config.currentState.length; i++) {
+            for (var i = 0; i < config.currentState.length; i++) {
                 var keys = config.currentState[i].keys;
-                for (var j=0; j<keys.length; j++)
+                for (var j = 0; j < keys.length; j++)
                     map = map[keys[j]];
             }
 
             return map;
         }
-	};
+    };
 
-	window.Openhab = Openhab;
+    window.Openhab = Openhab;
 
 })(window);
