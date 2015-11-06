@@ -228,6 +228,16 @@
 
         this.performAction = function (action) {
             switch (action.type) {
+                case "back":
+                    config.currentState.pop();
+                    config.onNavigated();
+                    break;
+
+                case "home":
+                    config.currentState = [];
+                    config.onNavigated();
+                    break;
+
                 case "navigation":
                     config.currentState.push(action.parameters.path);
                     config.onNavigated();

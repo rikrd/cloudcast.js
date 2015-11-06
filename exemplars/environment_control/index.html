@@ -97,6 +97,7 @@
     //url = CORS_PROXY + 'http://demo.openhab.org:9080/rest/sitemaps/demo';
     //url = 'bologna_aias_1.7.json';
     url = 'http://10.9.8.8:8080/rest/sitemaps/demo';
+    //url = 'http://my.openhab.org/openhab.app/rest/sitemaps/demo';
     //url = 'bologna_aias_2.0.json';
     var openhab;
 
@@ -106,21 +107,19 @@
         onCommandDetected: function (command, transcript) {
             __log("Command detected: " + JSON.stringify(command) + "  From transcript: " + transcript);
             if (command && !blacklist[command]) {
+                __log("Executing: " + JSON.stringify(command.parameters.label));
+
                 openhab.performAction(command);
-                blacklist[command] = true;
-                setTimeout(function () {
-                    blacklist[command] = false;
-                }, 500);
+                return true;
             }
         },
         onPartialCommandDetected: function (command, transcript) {
             __log("Partial command detected: " + JSON.stringify(command) + "  From transcript: " + transcript);
             if (command && !blacklist[command]) {
+                __log("Executing: " + JSON.stringify(command.parameters.label));
+
                 openhab.performAction(command);
-                blacklist[command] = true;
-                setTimeout(function () {
-                    blacklist[command] = false;
-                }, 500);
+                return true;
             }
         },
         language: "it",
@@ -239,9 +238,10 @@
     function actionchange_openhab(action) {
         // Search the button that must be updated by comparing the action to the button actions
         $('#current-actions > button').each(function (j, element) {
-            console.dir($(element));
             if ($(element).data("action") === action) {
-                update_switch($(element).data("link"), $(element));
+                setTimeout( function() {
+                    update_switch($(element).data("link"), $(element));
+                }, 100);
             }
         });
     }
@@ -371,6 +371,21 @@
                     break;
             }
         }
+
+        current_actions.push({
+            type: 'back',
+            parameters: {
+                'label': 'indietro',
+                'speech_command': 'indietro'}
+        });
+
+        current_actions.push({
+            type: 'home',
+            parameters: {
+                'label': 'inizio',
+                'speech_command': 'inizio'}
+        });
+
 
         gspeech.setCommands(current_actions);
     }

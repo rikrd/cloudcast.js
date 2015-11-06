@@ -18,6 +18,8 @@
 
         var _self = this;
 
+        var lastResultIndex = -1;
+
         if (!('webkitSpeechRecognition' in window)) {
             this.errorOutdated();
 
@@ -48,17 +50,21 @@
                 }
 
                 // Iterate over the results
-                for (var i = event.resultIndex; i < event.results.length; ++i) {
+                for (var i = lastResultIndex + 1; i < event.results.length; ++i) {
                     var transcript = event.results[i][0].transcript;
 
                     if (event.results[i].isFinal) {
                         // Fire command detection
                         var command = _self.detectCommand(transcript);
-                        config.onCommandDetected(command, transcript);
+                        var used = config.onCommandDetected(command, transcript);
                     } else {
                         // Light up possible detection
                         var command = _self.detectCommand(transcript);
-                        config.onPartialCommandDetected(command, transcript);
+                        var used = config.onPartialCommandDetected(command, transcript);
+                    }
+
+                    if (used) {
+                        lastResultIndex = i;
                     }
                 }
             };
